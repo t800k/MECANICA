@@ -420,7 +420,7 @@
         </div>
 
         <footer class="footer">
-            © 2024 · Diseño interactivo para Mecánica de Fluidos
+            ©2026 · Diseño interactivo para Mecánica de Fluidos
         </footer>
     </div>
 
