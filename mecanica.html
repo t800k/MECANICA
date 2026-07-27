@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama de Moody Interactivo – Ecuación de Darcy-Weisbach</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Pastel Crystal palette */
+            --mint: #3fc2a0;
+            --mint-deep: #1fa585;
+            --mint-light: #dcf6ec;
+            --pink: #ee6fa3;
+            --pink-deep: #d84e88;
+            --pink-light: #fce3ee;
+            --purple: #8b6fd8;
+            --purple-light: #ece4fb;
+            --blue: #5b8fd8;
+
+            --bg: #f7faf8;
+            --bg-glow:
+                radial-gradient(circle at 12% 8%, rgba(63,194,160,0.16), transparent 40%),
+                radial-gradient(circle at 88% 6%, rgba(238,111,163,0.14), transparent 42%),
+                radial-gradient(circle at 92% 92%, rgba(139,111,216,0.12), transparent 45%),
+                radial-gradient(circle at 6% 90%, rgba(63,194,160,0.14), transparent 45%),
+                linear-gradient(135deg, #eefaf4 0%, #f6fbf5 30%, #fdf4f8 65%, #fceaf1 100%);
+            --card-bg: rgba(255, 255, 255, 0.92);
+            --card-bg-raised: rgba(255, 255, 255, 0.97);
+            --text: #2b2740;
+            --text-light: #5a566b; /* Improved contrast */
+            --text-dim: #8a8696;
+            --primary: var(--mint);
+            --primary-dim: #a9e8d6;
+            --accent: var(--pink);
+            --accent-dim: #f6c3d8;
+            --border: rgba(43, 39, 64, 0.09);
+            --border-bright: rgba(43, 39, 64, 0.14);
+            --shadow: 0 4px 20px rgba(80, 60, 90, 0.07);
+            --shadow-lg: 0 16px 44px rgba(70, 50, 90, 0.12);
+            --radius: 18px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            --font-sans: 'Poppins', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --font-serif: 'Playfair Display', Georgia, serif;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg-glow);
+            background-color: var(--bg);
+            font-family: var(--font-sans);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 1150px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .header { text-align: center; padding: 0.8rem 0 0.4rem; }
+        .logo {
+            width: 64px; height: 64px; margin: 0 auto 0.5rem;
+            filter: drop-shadow(0 4px 8px rgba(80,60,90,0.15));
+            animation: float 4s ease-in-out infinite;
+        }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        
+        .header .eyebrow {
+            font-family: var(--font-sans); font-weight: 600; font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase;
+            color: var(--pink-deep); opacity: 0.9; margin-bottom: 0.6rem;
+        }
+        .header h1 {
+            font-size: 2.5rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.1;
+            color: var(--text);
+        }
+        .header h1 .accent-word {
+            font-family: var(--font-serif); font-style: italic; font-weight: 700;
+            background: linear-gradient(90deg, var(--pink), var(--purple) 55%, var(--mint));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .header .rule {
+            width: 90px; height: 4px; margin: 0.8rem auto 0.7rem; border-radius: 999px;
+            background: linear-gradient(90deg, var(--mint), var(--pink));
+        }
+        .header .subtitle { font-size: 0.95rem; color: var(--text-light); font-weight: 500; }
+        .problem-card {
+            background: var(--card-bg); border-radius: var(--radius);
+            padding: 1.5rem 1.8rem; box-shadow: var(--shadow); font-size: 0.92rem; line-height: 1.7; color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .problem-card h2 {
+            font-size: 0.75rem; color: var(--purple); margin-bottom: 0.8rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.14em;
+        }
+        .problem-card .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.6rem 1rem; margin-top: 1rem; }
+        .problem-card .data-item {
+            font-family: var(--font-mono); font-size: 0.82rem; color: var(--text);
+            background: var(--mint-light);
+            padding: 0.4rem 0.8rem; border-radius: 8px; white-space: nowrap; border: 1px solid var(--border);
+            text-align: center;
+        }
+        .problem-card .data-item:nth-child(even) { background: var(--pink-light); }
+        .main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; align-items: start; }
+        @media (max-width: 950px) { .main-grid { grid-template-columns: 1fr; } }
+        .card {
+            background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-lg);
+            padding: 1.3rem 1.2rem 1rem; border: 1px solid var(--border); transition: var(--transition);
+            position: relative;
+        }
+        .card h2 {
+            font-size: 0.75rem; font-weight: 700; color: var(--purple); margin-bottom: 0.8rem;
+            letter-spacing: 0.14em; text-transform: uppercase; display: flex; align-items: center; gap: 0.4rem;
+        }
+        .canvas-wrapper {
+            position: relative; width: 100%; aspect-ratio: 1.55 / 1; min-height: 420px;
+            background: #FCFBFE; border-radius: calc(var(--radius) - 6px); border: 1px solid var(--border-bright); overflow: hidden;
+        }
+        canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+        
+        /* HTML Legend for Moody Chart */
+        .legend {
+            position: absolute;
+            bottom: 55px;
+            right: 20px;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(4px);
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-bright);
+            font-size: 0.7rem;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            box-shadow: var(--shadow);
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; color: var(--text); font-weight: 500; }
+        .legend-line { width: 18px; height: 3px; border-radius: 2px; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        .side-panel { display: flex; flex-direction: column; gap: 1rem; }
+        .control-card {
+            background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 1.2rem 1.3rem; border: 1px solid var(--border);
+        }
+        .control-card h3 {
+            font-size: 0.7rem; font-weight: 700; color: var(--purple); margin-bottom: 0.9rem;
+            letter-spacing: 0.14em; text-transform: uppercase;
+        }
+        .control-group { margin-bottom: 0.85rem; }
+        .control-group:last-of-type { margin-bottom: 0; }
+        .control-group label { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 500; color: var(--text-light); margin-bottom: 0.35rem; }
+        .control-group label .val {
+            font-family: var(--font-mono); font-weight: 700; color: #FFFFFF; font-size: 0.76rem;
+            background: linear-gradient(135deg, var(--pink), var(--purple)); padding: 0.15rem 0.6rem;
+            border-radius: 999px; border: none;
+        }
+        
+        /* Improved Range Sliders */
+        input[type="range"] {
+            -webkit-appearance: none; width: 100%; height: 6px; border-radius: 999px;
+            background: linear-gradient(to right, var(--mint) 0%, var(--mint) var(--val, 50%), var(--border-bright) var(--val, 50%), var(--border-bright) 100%);
+            outline: none; cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--blue), var(--mint));
+            cursor: pointer; border: 3px solid #ffffff; box-shadow: 0 2px 8px rgba(70,50,90,0.25); transition: transform 0.15s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px; height: 18px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--blue), var(--mint));
+            cursor: pointer; border: 3px solid #ffffff; box-shadow: 0 2px 8px rgba(70,50,90,0.25);
+        }
+        
+        .result-highlight {
+            background: linear-gradient(160deg, var(--mint-light), var(--pink-light));
+            border: 1px solid var(--border-bright); border-radius: var(--radius); padding: 1.2rem 1rem;
+            text-align: center; margin-top: 0.3rem;
+        }
+        .result-highlight .big-number {
+            font-size: 2.5rem; font-weight: 800; font-family: var(--font-sans);
+            background: linear-gradient(90deg, var(--purple), var(--pink));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            letter-spacing: -0.02em; line-height: 1;
+            margin-bottom: 0.3rem;
+        }
+        .result-highlight .unit { font-size: 0.85rem; color: var(--text-light); font-weight: 500; }
+        .flow-card { text-align: center; padding-bottom: 1.2rem; }
+        .flow-canvas-container {
+            width: 100%; height: 150px; background: #FCFBFE; border-radius: calc(var(--radius) - 6px);
+            margin: 0.4rem 0 0.8rem; border: 1px solid var(--border-bright); overflow: hidden;
+        }
+        .flow-info { font-size: 0.78rem; color: var(--text); display: flex; justify-content: center; gap: 1.5rem; font-weight: 500; }
+        .flow-info strong { color: var(--pink-deep); font-family: var(--font-mono); font-weight: 700; }
+        
+        .steps-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+        .step-card {
+            background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 1.2rem 1.3rem; border: 1px solid var(--border); border-left: 4px solid var(--purple);
+            transition: var(--transition); cursor: default;
+        }
+        .step-card:nth-child(2) { border-left-color: var(--pink); }
+        .step-card:nth-child(3) { border-left-color: var(--mint); }
+        .step-card:nth-child(4) { border-left-color: var(--blue); }
+        .step-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
+        .step-card .step-num {
+            font-family: var(--font-sans); font-size: 0.68rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--pink-deep); margin-bottom: 0.4rem;
+        }
+        .step-card .step-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text); }
+        .step-card .step-desc { font-size: 0.8rem; color: var(--text-light); line-height: 1.5; }
+
+        /* --- Math / equation typesetting --- */
+        .eqn-box {
+            background: #F9F8FC; border: 1px solid var(--border-bright); border-radius: 12px;
+            padding: 0.8rem 1rem; margin-top: 0.6rem; display: flex; flex-wrap: wrap; align-items: center;
+            justify-content: center; gap: 0.4rem; font-family: var(--font-serif); font-style: italic; color: var(--text);
+            font-size: 1rem;
+        }
+        .eqn-box.result { background: var(--pink-light); font-size: 1.1rem; }
+        .eqn-box .arrow { font-style: normal; font-family: var(--font-sans); font-weight: 700; color: var(--text-light); font-size: 1rem; margin: 0 0.2rem; }
+        .eqn-box .result-strong { font-style: normal; font-weight: 800; color: var(--pink-deep); font-family: var(--font-sans); font-size: 1rem; }
+        .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; text-align: center; line-height: 1.1; margin: 0 0.2rem; }
+        .frac .num, .frac .den { padding: 0 0.3rem; white-space: nowrap; }
+        .frac .den { border-top: 1.5px solid var(--text); margin-top: 2px; padding-top: 1px; }
+        .eqn-var { font-family: var(--font-serif); font-style: italic; }
+        .eqn-var sup, .eqn-var sub { font-style: italic; }
+        sup, sub { font-size: 0.65em; }
+
+        .canvas-tooltip {
+            position: absolute; pointer-events: none; background: rgba(43,39,64,0.95); color: #fff;
+            font-size: 0.72rem; font-family: var(--font-mono); padding: 0.4rem 0.7rem; border-radius: 8px;
+            white-space: nowrap; opacity: 0; transition: opacity 0.15s; z-index: 10; top: 8px; left: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .footer { text-align: center; font-size: 0.75rem; color: var(--text-dim); margin-top: 0.5rem; font-family: var(--font-mono); }
+        
+        #btnReset {
+            width:100%; padding:0.7rem; margin-top:1rem; background: linear-gradient(90deg, var(--purple), var(--pink));
+            color:#fff; border: none; border-radius: 999px; cursor:pointer; font-weight:700;
+            font-size:0.78rem; transition:var(--transition); letter-spacing:0.03em; text-transform: uppercase;
+            box-shadow: 0 4px 12px rgba(139, 111, 216, 0.3);
+        }
+        #btnReset:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(139, 111, 216, 0.4); }
+        
+        @media (max-width: 700px) {
+            .header h1 { font-size: 1.8rem; }
+            .canvas-wrapper { aspect-ratio: 1.2/1; min-height: 300px; }
+            .steps-section { grid-template-columns: 1fr; }
+            .problem-card .data-grid { grid-template-columns: 1fr 1fr; }
+            .legend { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="50,6 74,34 50,52 26,34" fill="var(--pink)"/>
+                <polygon points="50,6 74,34 62,60 50,52" fill="var(--purple)"/>
+                <polygon points="50,6 26,34 38,60 50,52" fill="var(--mint)"/>
+                <polygon points="26,34 50,52 62,60 44,84 26,50" fill="var(--mint-deep)"/>
+                <polygon points="74,34 50,52 62,60 56,84 74,50" fill="var(--pink-deep)"/>
+                <polygon points="50,52 62,60 56,84 44,84 38,60" fill="var(--purple)"/>
+            </svg>
+            <div class="eyebrow">Mecánica de fluidos · Flujo en tuberías</div>
+            <h1>Diagrama de <span class="accent-word">Moody</span> interactivo</h1>
+            <div class="rule"></div>
+            <div class="subtitle">Ecuación de Darcy-Weisbach</div>
+        </header>
+
+        <div class="problem-card">
+            <h2>Enunciado del problema</h2>
+            <p>
+                Se tiene una tubería de acero comercial de diámetro interior <strong>D = 200 mm</strong>
+                y longitud <strong>L = 500 m</strong>, por la que fluye agua a 20 °C.
+                La rugosidad absoluta de la tubería es <strong>ε = 0.046 mm</strong> y la pérdida de carga
+                por fricción que se produce es <strong>h<sub>f</sub> = 25 m</strong>.
+                Utilizando el diagrama de Moody, determine <strong>gráficamente el caudal</strong> que circula por la tubería.
+            </p>
+            <div class="data-grid">
+                <span class="data-item">D = 200 mm</span>
+                <span class="data-item">L = 500 m</span>
+                <span class="data-item">ν = 1.004×10⁻⁶ m²/s</span>
+                <span class="data-item">ε = 0.046 mm</span>
+                <span class="data-item">ε/D = 0.00023</span>
+                <span class="data-item">h<sub>f</sub> = 25 m</span>
+                <span class="data-item">g = 9.81 m/s²</span>
+            </div>
+        </div>
+
+        <div class="steps-section">
+            <div class="step-card">
+                <div class="step-num">Paso 1</div>
+                <div class="step-title">Datos del fluido y tubería</div>
+                <div class="step-desc">
+                    Agua a 20 °C:<br> ν = 1.004×10⁻⁶ m²/s, <br>g = 9.81 m/s².<br>
+                    D = 200 mm <br>L = 500 m <br> ε/D = 0.00023<br> h<sub>f</sub> = 25 m.
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">Paso 2</div>
+                <div class="step-title">Relación f – Re (Darcy-Weisbach)</div>
+                <div class="step-desc">Partiendo de las ecuaciones de pérdida de carga y del número de Reynolds:</div>
+                <div class="eqn-box">
+                    <span class="eqn-var">h<sub>f</sub></span><span>=</span><span class="eqn-var">f</span>
+                    <span class="frac"><span class="num">L</span><span class="den">D</span></span>
+                    <span class="frac"><span class="num">V²</span><span class="den">2g</span></span>
+                    <span style="margin:0 0.6rem;color:var(--text-light);">→</span>
+                    <span class="eqn-var">Re</span><span>=</span>
+                    <span class="frac"><span class="num">VD</span><span class="den">ν</span></span>
+                </div>
+                <div class="step-desc" style="margin-top:0.6rem;">Se obtiene la relación que define la recta de operación:</div>
+                <div class="eqn-box">
+                    <span class="eqn-var">f</span><span>=</span>
+                    <span class="frac"><span class="num">2g D³ h<sub>f</sub></span><span class="den">L ν² Re²</span></span>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">Paso 3</div>
+                <div class="step-title">Trazado sobre el diagrama</div>
+                <div class="step-desc">
+                    Se dibuja la recta <em>f = C/Re²</em> (pendiente -2 en escala log-log) y se busca su intersección con la curva de rugosidad relativa <strong>ε/D = 0.00023</strong> (resaltada en verde).
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">Paso 4</div>
+                <div class="step-title">Lectura gráfica y cálculo de Q</div>
+                <div class="step-desc">Del punto de intersección se leen Re y f. Luego se despeja la velocidad y el caudal:</div>
+                <div class="eqn-box">
+                    <span class="eqn-var">V</span><span>=</span>
+                    <span class="frac"><span class="num">Re ν</span><span class="den">D</span></span>
+                    <span class="arrow">→</span>
+                    <span class="eqn-var">Q</span><span>=</span><span class="eqn-var">A·V</span><span>=</span>
+                    <span class="frac"><span class="num">πD²</span><span class="den">4</span></span>
+                    <span class="eqn-var">·V</span>
+                </div>
+                <div class="eqn-box result">
+                    <span class="result-strong">Q ≈ 0.112 m³/s (112 L/s)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="card">
+                <h2>📊 Diagrama de Moody</h2>
+                <div class="canvas-wrapper" id="canvasWrapper">
+                    <canvas id="moodyCanvas" role="img" aria-label="Diagrama de Moody interactivo mostrando el factor de fricción vs Número de Reynolds"></canvas>
+                    <div class="canvas-tooltip" id="canvasTooltip"></div>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-line" style="background: var(--pink);"></div>
+                            <span>Recta de operación</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-line" style="background: var(--mint); height: 4px;"></div>
+                            <span>Curva ε/D objetivo</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: var(--pink); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--pink);"></div>
+                            <span>Punto de solución</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="side-panel">
+                <div class="control-card">
+                    <h3>⚙️ Parámetros ajustables</h3>
+                    <div class="control-group">
+                        <label for="sliderRoughness">Rugosidad relativa ε/D <span class="val" id="valRoughness">0.00023</span></label>
+                        <input type="range" id="sliderRoughness" min="0.00001" max="0.05" step="0.00001" value="0.00023" aria-label="Rugosidad relativa">
+                    </div>
+                    <div class="control-group">
+                        <label for="sliderHf">Pérdida de carga h<sub>f</sub> [m] <span class="val" id="valHf">25.0</span></label>
+                        <input type="range" id="sliderHf" min="1" max="80" step="0.5" value="25" aria-label="Pérdida de carga en metros">
+                    </div>
+                    <div class="control-group">
+                        <label for="sliderD">Diámetro D [mm] <span class="val" id="valD">200</span></label>
+                        <input type="range" id="sliderD" min="50" max="500" step="5" value="200" aria-label="Diámetro en milímetros">
+                    </div>
+                    <div class="control-group">
+                        <label for="sliderL">Longitud L [m] <span class="val" id="valL">500</span></label>
+                        <input type="range" id="sliderL" min="50" max="2000" step="10" value="500" aria-label="Longitud en metros">
+                    </div>
+                    <button id="btnReset">↺ Restaurar valores originales</button>
+                </div>
+
+                <div class="control-card result-highlight">
+                    <h3 style="color:var(--text-light);margin-bottom:0.5rem;opacity:0.8;">💡 Caudal Resultante</h3>
+                    <div class="big-number" id="resultQ">0.112</div>
+                    <div class="unit">m³/s &nbsp;·&nbsp; <span id="resultQL">112</span> L/s</div>
+                    <div style="font-size:0.75rem;color:var(--text-light);margin-top:0.6rem;font-family:var(--font-mono);padding-top:0.6rem;border-top:1px dashed var(--border-bright);">
+                        Re ≈ <strong style="color:var(--pink-deep);" id="resultRe">7.1×10⁵</strong> &nbsp;|&nbsp; f ≈ <strong style="color:var(--pink-deep);" id="resultF">0.0153</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card flow-card">
+            <h3> Visualización del flujo</h3>
+            <div class="flow-canvas-container">
+                <canvas id="flowCanvas"></canvas>
+            </div>
+            <div class="flow-info">
+                <span>Velocidad media: <strong id="flowSpeed">3.56</strong> m/s</span>
+                <span>Re: <strong id="flowRe">7.1×10⁵</strong></span>
+                <span>Régimen: <strong id="flowRegime" style="color:var(--purple);">Turbulento</strong></span>
+            </div>
+        </div>
+
+        <footer class="footer">
+            © 2024 · Diseño interactivo para Mecánica de Fluidos
+        </footer>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('moodyCanvas');
+            const ctx = canvas.getContext('2d');
+            const wrapper = document.getElementById('canvasWrapper');
+            const tooltip = document.getElementById('canvasTooltip');
+
+            const sliderRoughness = document.getElementById('sliderRoughness');
+            const sliderHf = document.getElementById('sliderHf');
+            const sliderD = document.getElementById('sliderD');
+            const sliderL = document.getElementById('sliderL');
+            const btnReset = document.getElementById('btnReset');
+
+            const valRoughness = document.getElementById('valRoughness');
+            const valHf = document.getElementById('valHf');
+            const valD = document.getElementById('valD');
+            const valL = document.getElementById('valL');
+
+            const resultQ = document.getElementById('resultQ');
+            const resultQL = document.getElementById('resultQL');
+            const resultRe = document.getElementById('resultRe');
+            const resultF = document.getElementById('resultF');
+
+            const flowCanvas = document.getElementById('flowCanvas');
+            const flowCtx = flowCanvas.getContext('2d');
+            const flowSpeedLabel = document.getElementById('flowSpeed');
+            const flowReLabel = document.getElementById('flowRe');
+            const flowRegime = document.getElementById('flowRegime');
+
+            const g = 9.81;
+            const nu = 1.004e-6;
+
+            let epsOverD = 0.00023;
+            let hf = 25;
+            let D_m = 0.2;
+            let L = 500;
+
+            const logReMin = 3.0;
+            const logReMax = 8.0;
+            const logFMin = -2.15;
+            const logFMax = -0.92;
+
+            const rugosityCurvesData = {};
+            const rugosityValues = [
+                0.05, 0.04, 0.03, 0.02, 0.015, 0.01, 0.008, 0.006, 0.004, 0.002,
+                0.001, 0.0006, 0.0004, 0.00023, 0.0002, 0.0001, 0.00005, 0.00002,
+                0.00001, 0.000005, 0.000001, 0.0000001
+            ];
+
+            function initialF(Re, epsD) {
+                if (Re <= 2300) return 64 / Re;
+                const a = epsD / 3.7;
+                const b = 5.74 / Math.pow(Re, 0.9);
+                return Math.max(0.006, Math.min(0.12, 0.25 / Math.pow(Math.log10(a + b), 2)));
+            }
+
+            function solveColebrook(Re, epsD, maxIter = 20, tol = 1e-10) {
+                if (Re <= 2300) return 64 / Re;
+                let f = initialF(Re, epsD);
+                const a = epsD / 3.7;
+                for (let i = 0; i < maxIter; i++) {
+                    const sqrtF = Math.sqrt(f);
+                    const arg = a + 2.51 / (Re * sqrtF);
+                    if (arg <= 0) return f;
+                    const gVal = 1 / sqrtF + 2 * Math.log10(arg);
+                    const dg_df = -0.5 / (f * sqrtF) - (2 / Math.log(10)) * (2.51 / (Re * f * sqrtF)) / arg;
+                    const delta = gVal / dg_df;
+                    f -= delta;
+                    if (f <= 0.001) f = 0.001;
+                    if (f > 0.15) f = 0.15;
+                    if (Math.abs(delta) < tol) break;
+                }
+                return f;
+            }
+
+            function precomputeRugosityCurves() {
+                const allRe = [];
+                for (let i = 0; i < 250; i++) {
+                    allRe.push(Math.pow(10, logReMin + (logReMax - logReMin) * i / 249));
+                }
+                // Add extra points for transition zone
+                for (let lr = 3.3; lr <= 4.5; lr += 0.02) allRe.push(Math.pow(10, lr));
+                allRe.sort((a, b) => a - b);
+
+                rugosityValues.forEach(epsD => {
+                    const curve = [];
+                    allRe.forEach(Re => {
+                        const f = solveColebrook(Re, epsD);
+                        const logRe = Math.log10(Re);
+                        const logF = Math.log10(f);
+                        if (logF >= logFMin - 0.15 && logF <= logFMax + 0.15) curve.push({ logRe, logF, Re, f });
+                    });
+                    rugosityCurvesData[epsD.toFixed(7)] = curve;
+                });
+
+                const smoothCurve = [];
+                for (let i = 0; i < 300; i++) {
+                    const logRe = logReMin + (logReMax - logReMin) * i / 299;
+                    const Re = Math.pow(10, logRe);
+                    if (Re < 4000) {
+                        const f = 64 / Re;
+                        const logF = Math.log10(f);
+                        if (logF >= logFMin - 0.1 && logF <= logFMax + 0.1) smoothCurve.push({ logRe, logF, Re, f });
+                    } else {
+                        const f = solveColebrook(Re, 1e-10);
+                        const logF = Math.log10(f);
+                        if (logF >= logFMin - 0.1 && logF <= logFMax + 0.1) smoothCurve.push({ logRe, logF, Re, f });
+                    }
+                }
+                rugosityCurvesData['smooth'] = smoothCurve;
+            }
+            precomputeRugosityCurves();
+
+            let currentW = 0, currentH = 0;
+            let margins = { ml: 65, mr: 30, mt: 25, mb: 45 };
+            let animationFrameId = null;
+            let pulsePhase = 0;
+
+            function resizeCanvas() {
+                const rect = wrapper.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                const w = Math.round(rect.width);
+                const h = Math.round(rect.height);
+                canvas.width = w * dpr;
+                canvas.height = h * dpr;
+                canvas.style.width = w + 'px';
+                canvas.style.height = h + 'px';
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.scale(dpr, dpr);
+                return { w, h };
+            }
+
+            function toCanvasX(logRe, w, ml, mr) { return ml + (w - ml - mr) * (logRe - logReMin) / (logReMax - logReMin); }
+            function toCanvasY(logF, h, mt, mb) { return mt + (h - mt - mb) * (logFMax - logF) / (logFMax - logFMin); }
+            function fromCanvasX(cx, w, ml, mr) { return logReMin + (cx - ml) / (w - ml - mr) * (logReMax - logReMin); }
+            function fromCanvasY(cy, h, mt, mb) { return logFMax - (cy - mt) / (h - mt - mb) * (logFMax - logFMin); }
+
+            function drawGrid(ctx, w, h, ml, mr, mt, mb) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(43,39,64,0.06)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+                for (let lr = 3; lr <= 8; lr++) { const x = toCanvasX(lr, w, ml, mr); ctx.beginPath(); ctx.moveTo(x, mt); ctx.lineTo(x, h - mb); ctx.stroke(); }
+                [0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1].forEach(fv => { const y = toCanvasY(Math.log10(fv), h, mt, mb); ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(w - mr, y); ctx.stroke(); });
+                ctx.setLineDash([]); ctx.restore();
+            }
+
+            function drawAxes(ctx, w, h, ml, mr, mt, mb) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(43,39,64,0.4)'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(ml, h - mb); ctx.lineTo(w - mr + 5, h - mb); ctx.moveTo(ml, mt - 5); ctx.lineTo(ml, h - mb); ctx.stroke();
+                ctx.fillStyle = 'rgba(43,39,64,0.8)'; ctx.font = '600 11px "Poppins", "Inter", sans-serif'; ctx.textAlign = 'center';
+                for (let lr = 3; lr <= 8; lr++) { const x = toCanvasX(lr, w, ml, mr); ctx.fillText(`10${lr.toString().split('').map(d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[d]).join('')}`, x, h - mb + 18); }
+                ctx.fillStyle = 'rgba(43,39,64,0.6)'; ctx.font = '500 12px "Poppins", sans-serif';
+                ctx.fillText('Re (Número de Reynolds)', w / 2, h - mb + 36);
+                
+                ctx.fillStyle = 'rgba(43,39,64,0.8)'; ctx.font = '600 11px "Poppins", sans-serif'; ctx.textAlign = 'right';
+                [0.008, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.12].forEach(fv => { const y = toCanvasY(Math.log10(fv), h, mt, mb); ctx.fillText(fv.toFixed(fv < 0.01 ? 3 : 2), ml - 8, y + 4); });
+                ctx.save(); ctx.translate(ml - 40, h / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(43,39,64,0.6)'; ctx.font = '500 12px "Poppins", sans-serif'; ctx.fillText('f (Factor de fricción)', 0, 0); ctx.restore();
+                ctx.restore();
+            }
+
+            function drawCurve(ctx, pts, w, h, ml, mr, mt, mb, color, lw, dash = null) {
+                if (pts.length < 2) return;
+                ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = lw; if (dash) ctx.setLineDash(dash);
+                ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+                ctx.beginPath(); let first = true;
+                pts.forEach(pt => { const x = toCanvasX(pt.logRe, w, ml, mr), y = toCanvasY(pt.logF, h, mt, mb); if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y); });
+                ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+            }
+
+            function findIntersection(C, epsD) {
+                const f_recta = (Re) => C / (Re * Re);
+                const f_real = (Re) => Re <= 2300 ? 64 / Re : solveColebrook(Re, epsD);
+                const diff = (Re) => f_recta(Re) - f_real(Re);
+                let lo = 1e2, hi = 1e10;
+                const fLo = diff(lo), fHi = diff(hi);
+                if (fLo * fHi > 0) return Math.abs(fLo) < 1e-12 ? lo : Math.abs(fHi) < 1e-12 ? hi : null;
+                for (let i = 0; i < 100; i++) { const mid = (lo + hi) / 2, fMid = diff(mid); if (Math.abs(fMid) < 1e-10 || (hi - lo) / mid < 1e-12) return mid; if (fLo * fMid <= 0) hi = mid; else lo = mid; }
+                return (lo + hi) / 2;
+            }
+
+            function drawAll(ctx, w, h) {
+                const { ml, mr, mt, mb } = margins;
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = '#FCFBFE'; ctx.fillRect(0, 0, w, h);
+                
+                // Ambient glow
+                const gradPink = ctx.createRadialGradient(w * 0.85, h * 0.1, 10, w * 0.85, h * 0.1, w * 0.6);
+                gradPink.addColorStop(0, 'rgba(238,111,163,0.05)'); gradPink.addColorStop(1, 'rgba(238,111,163,0)');
+                ctx.fillStyle = gradPink; ctx.fillRect(0, 0, w, h);
+                const gradMint = ctx.createRadialGradient(w * 0.1, h * 0.9, 10, w * 0.1, h * 0.9, w * 0.6);
+                gradMint.addColorStop(0, 'rgba(63,194,160,0.05)'); gradMint.addColorStop(1, 'rgba(63,194,160,0)');
+                ctx.fillStyle = gradMint; ctx.fillRect(0, 0, w, h);
+
+                drawGrid(ctx, w, h, ml, mr, mt, mb);
+                drawAxes(ctx, w, h, ml, mr, mt, mb);
+                
+                // Laminar line
+                const lamPts = [];
+                for (let logRe = logReMin; logRe <= Math.log10(2300); logRe += 0.05) {
+                    const Re = Math.pow(10, logRe); const f = 64/Re; const logF = Math.log10(f);
+                    if (logF >= logFMin && logF <= logFMax) lamPts.push({logRe, logF, Re, f});
+                }
+                drawCurve(ctx, lamPts, w, h, ml, mr, mt, mb, 'rgba(43,39,64,0.3)', 1.8, [6, 4]);
+                if (rugosityCurvesData['smooth']) drawCurve(ctx, rugosityCurvesData['smooth'], w, h, ml, mr, mt, mb, 'rgba(43,39,64,0.15)', 1.2);
+                
+                // Draw roughness curves
+                rugosityValues.forEach(epsD => {
+                    const key = epsD.toFixed(7), curve = rugosityCurvesData[key]; if (!curve || curve.length < 2) return;
+                    let color = 'rgba(139,111,216,0.35)', lw = 1;
+                    if (Math.abs(epsD - epsOverD) < 1e-9) { 
+                        color = '#3fc2a0'; lw = 3.5; 
+                    } else if ([0.0002, 0.0004, 0.0001].some(v => Math.abs(epsD - v) < 1e-6)) { 
+                        color = 'rgba(139,111,216,0.6)'; lw = 1.5; 
+                    }
+                    drawCurve(ctx, curve, w, h, ml, mr, mt, mb, color, lw, null);
+                });
+                
+                // Labels for curves
+                ctx.save(); 
+                [0.05, 0.02, 0.01, 0.004, 0.001, 0.0004, 0.0002, 0.0001, 0.00005, 0.00001, 0.000001].forEach(epsD => {
+                    const key = epsD.toFixed(7), curve = rugosityCurvesData[key]; if (!curve || curve.length < 20) return;
+                    const pt = curve[Math.floor(curve.length * 0.85)]; if (!pt) return;
+                    const x = toCanvasX(pt.logRe, w, ml, mr), y = toCanvasY(pt.logF, h, mt, mb);
+                    let lbl = epsD < 0.001 ? epsD.toExponential(1) : epsD.toFixed(epsD >= 0.01 ? 2 : 4);
+                    if (Math.abs(epsD - epsOverD) < 1e-9) { 
+                        ctx.fillStyle = '#1fa585'; ctx.font = 'bold 10px "Poppins", sans-serif';
+                        lbl = (epsD === 0.00023 ? '0.00023 ★' : lbl + ' ★');
+                    } else {
+                        ctx.fillStyle = 'rgba(43,39,64,0.5)'; ctx.font = '500 9px "Poppins", sans-serif';
+                    }
+                    ctx.fillText(lbl, x + 5, y - 4);
+                });
+                ctx.restore();
+
+                // Operation line
+                const C = (2 * g * Math.pow(D_m, 3) * hf) / (L * nu * nu);
+                const rectaPts = [];
+                for (let logRe = logReMin; logRe <= logReMax; logRe += 0.015) { 
+                    const Re = Math.pow(10, logRe), f = C / (Re * Re), logF = Math.log10(f); 
+                    if (logF >= logFMin - 0.3 && logF <= logFMax + 0.3) rectaPts.push({ logRe, logF, Re, f }); 
+                }
+                drawCurve(ctx, rectaPts, w, h, ml, mr, mt, mb, '#ee6fa3', 2.8, null);
+
+                // Find and draw intersection
+                const Re_sol = findIntersection(C, epsOverD);
+                let intersection = null;
+                
+                if (Re_sol !== null && Re_sol > 0) {
+                    const f_sol = Re_sol <= 2300 ? 64 / Re_sol : solveColebrook(Re_sol, epsOverD);
+                    intersection = { Re: Re_sol, f: f_sol, logRe: Math.log10(Re_sol), logF: Math.log10(f_sol) };
+                    const Q = (Math.PI * D_m * D_m / 4) * (Re_sol * nu / D_m);
+                    
+                    resultQ.textContent = Q.toFixed(4);
+                    resultQL.textContent = (Q * 1000).toFixed(1);
+                    resultRe.textContent = Re_sol.toExponential(1).replace("e+", "×10");
+                    resultF.textContent = f_sol.toFixed(4);
+                    
+                    window.__flowData = { V: Q / (Math.PI * D_m * D_m / 4), Re: Re_sol, D: D_m };
+                } else {
+                    resultQ.textContent = '---'; resultQL.textContent = '---'; 
+                    resultRe.textContent = '---'; resultF.textContent = '---';
+                    window.__flowData = null;
+                }
+
+                if (intersection && intersection.logRe >= logReMin && intersection.logRe <= logReMax && intersection.logF >= logFMin && intersection.logF <= logFMax) {
+                    const ix = toCanvasX(intersection.logRe, w, ml, mr), iy = toCanvasY(intersection.logF, h, mt, mb);
+                    
+                    // Pulsating halo
+                    const pulseRadius = 12 + Math.sin(pulsePhase) * 4;
+                    ctx.save();
+                    ctx.fillStyle = `rgba(238, 111, 163, ${0.2 + Math.sin(pulsePhase)*0.1})`;
+                    ctx.beginPath(); ctx.arc(ix, iy, pulseRadius, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                    
+                    // Dashed lines to axes
+                    ctx.save(); ctx.setLineDash([4, 6]); ctx.strokeStyle = 'rgba(238,111,163,0.6)'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.moveTo(ix, iy); ctx.lineTo(ix, h - mb); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(ix, iy); ctx.lineTo(ml, iy); ctx.stroke(); ctx.setLineDash([]); 
+                    ctx.restore();
+                    
+                    // Intersection dot
+                    ctx.save(); 
+                    ctx.fillStyle = '#ee6fa3'; ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 3; 
+                    ctx.beginPath(); ctx.arc(ix, iy, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                    ctx.restore();
+                    
+                    // Labels with stroke for readability
+                    ctx.save();
+                    ctx.font = 'bold 11px "Poppins", sans-serif'; ctx.textAlign = 'left';
+                    const txt1 = `Re = ${intersection.Re.toExponential(1).replace("e+", "×10")}`;
+                    const txt2 = `f = ${intersection.f.toFixed(4)}`;
+                    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+                    ctx.strokeText(txt1, ix + 12, iy - 8); ctx.strokeText(txt2, ix + 12, iy + 12);
+                    ctx.fillStyle = '#2b2740'; 
+                    ctx.fillText(txt1, ix + 12, iy - 8); ctx.fillText(txt2, ix + 12, iy + 12);
+                    ctx.restore();
+                } else if (intersection) {
+                    ctx.save(); ctx.fillStyle = 'rgba(238,111,163,0.8)'; ctx.font = '600 14px "Poppins", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Solución fuera de escala', w / 2, h / 2); ctx.restore();
+                }
+            }
+
+            function resizeAndDraw() {
+                const { w, h } = resizeCanvas();
+                currentW = w; currentH = h;
+                drawAll(ctx, w, h);
+            }
+
+            function redraw() {
+                if (!currentW || !currentH) { resizeAndDraw(); return; }
+                drawAll(ctx, currentW, currentH);
+            }
+
+            // Canvas Hover Tooltip
+            canvas.addEventListener('mousemove', function(e) {
+                if (!margins) return; 
+                const rect = canvas.getBoundingClientRect(); 
+                const mx = e.clientX - rect.left, my = e.clientY - rect.top; 
+                const w = rect.width, h = rect.height;
+                const logRe = fromCanvasX(mx, w, margins.ml, margins.mr), logF = fromCanvasY(my, h, margins.mt, margins.mb);
+                if (logRe >= logReMin && logRe <= logReMax && logF >= logFMin && logF <= logFMax) {
+                    tooltip.style.opacity = '1'; tooltip.style.top = (my + 15) + 'px'; tooltip.style.left = (mx + 15) + 'px';
+                    const reVal = Math.pow(10, logRe);
+                    tooltip.textContent = `Re: ${reVal.toExponential(2)} | f: ${Math.pow(10, logF).toFixed(4)}`;
+                } else tooltip.style.opacity = '0';
+            });
+            canvas.addEventListener('mouseleave', () => tooltip.style.opacity = '0');
+
+            // Flow Animation
+            let particles = [];
+            const numParticles = 60;
+
+            function resizeFlowCanvas() {
+                const rect = flowCanvas.parentElement.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                flowCanvas.width = rect.width * dpr;
+                flowCanvas.height = rect.height * dpr;
+                flowCanvas.style.width = rect.width + 'px';
+                flowCanvas.style.height = rect.height + 'px';
+                flowCtx.setTransform(1, 0, 0, 1, 0, 0);
+                flowCtx.scale(dpr, dpr);
+                initParticles(rect.width, rect.height);
+            }
+
+            function initParticles(w, h) {
+                particles = [];
+                for (let i = 0; i < numParticles; i++) {
+                    particles.push({ x: Math.random() * w, y: Math.random() * h });
+                }
+            }
+
+            function velocityProfile(yNorm, Re) {
+                if (Re < 2300) {
+                    const r = 2 * yNorm - 1; return 1 - r * r; // Laminar parabola
+                } else {
+                    const r = Math.abs(2 * yNorm - 1); return Math.pow(1 - r, 1 / 7); // Turbulent 1/7th power law
+                }
+            }
+
+            function animateFlow() {
+                const rect = flowCanvas.parentElement.getBoundingClientRect();
+                const w = rect.width, h = rect.height;
+
+                flowCtx.clearRect(0, 0, w, h);
+
+                // ---- Cylindrical pipe geometry ----
+                const top = 8, bottom = h - 8;
+                const cy = (top + bottom) / 2;
+                const capRy = (bottom - top) / 2;
+                const capRx = Math.max(9, Math.min(20, h * 0.12));
+
+                function buildPipePath() {
+                    flowCtx.beginPath();
+                    flowCtx.moveTo(capRx, top);
+                    flowCtx.lineTo(w - capRx, top);
+                    flowCtx.ellipse(w - capRx, cy, capRx, capRy, 0, -Math.PI / 2, Math.PI / 2, false);
+                    flowCtx.lineTo(capRx, bottom);
+                    flowCtx.ellipse(capRx, cy, capRx, capRy, 0, Math.PI / 2, 3 * Math.PI / 2, false);
+                    flowCtx.closePath();
+                }
+
+                // Cylindrical shading: dark rim -> bright highlight band -> dark rim,
+                // like light wrapping around a round tube.
+                const tubeGrad = flowCtx.createLinearGradient(0, top, 0, bottom);
+                tubeGrad.addColorStop(0.00, 'rgba(150, 170, 190, 0.55)');
+                tubeGrad.addColorStop(0.14, 'rgba(190, 225, 235, 0.55)');
+                tubeGrad.addColorStop(0.38, 'rgba(235, 250, 250, 0.7)');
+                tubeGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.85)');
+                tubeGrad.addColorStop(0.62, 'rgba(235, 250, 250, 0.7)');
+                tubeGrad.addColorStop(0.86, 'rgba(220, 200, 225, 0.55)');
+                tubeGrad.addColorStop(1.00, 'rgba(150, 140, 170, 0.55)');
+
+                flowCtx.save();
+                buildPipePath();
+                flowCtx.clip();
+                flowCtx.fillStyle = tubeGrad;
+                flowCtx.fillRect(0, top - 2, w, bottom - top + 4);
+
+                const data = window.__flowData;
+
+                if (data && data.V > 0.001) {
+                    const V = data.V;
+                    const Re = data.Re;
+                    const Vmax = Re < 2300 ? 2 * V : V / 0.817;
+                    const pixelsPerMeter = 80;
+                    const dt = 1 / 60;
+
+                    flowSpeedLabel.textContent = V.toFixed(2);
+                    flowReLabel.textContent = Re.toExponential(1).replace("e+", "×10");
+                    flowRegime.textContent = Re < 2300 ? 'Laminar' : 'Turbulento';
+                    flowRegime.style.color = Re < 2300 ? 'var(--blue)' : 'var(--purple)';
+
+                    // Update particles
+                    particles.forEach(p => {
+                        const yNorm = p.y / h;
+                        const u_norm = velocityProfile(yNorm, Re);
+                        const u = u_norm * Vmax;
+                        p.x += u * pixelsPerMeter * dt;
+                        if (p.x > w + 20) p.x = -20;
+                    });
+
+                    // Draw streaklines
+                    particles.forEach(p => {
+                        const yNorm = p.y / h;
+                        const u_norm = velocityProfile(yNorm, Re);
+                        const len = u_norm * Vmax * 0.15; // Streak length based on velocity
+
+                        const sGrad = flowCtx.createLinearGradient(p.x - len, p.y, p.x, p.y);
+                        sGrad.addColorStop(0, 'rgba(63,194,160,0)');
+                        sGrad.addColorStop(1, 'rgba(31,165,133,0.8)');
+
+                        flowCtx.strokeStyle = sGrad;
+                        flowCtx.lineWidth = 2.5;
+                        flowCtx.lineCap = 'round';
+                        flowCtx.beginPath();
+                        flowCtx.moveTo(p.x - len, p.y);
+                        flowCtx.lineTo(p.x, p.y);
+                        flowCtx.stroke();
+                    });
+
+                    // Draw velocity profile curve
+                    const leftMargin = capRx + 6;
+                    flowCtx.save();
+                    flowCtx.strokeStyle = 'rgba(216, 78, 136, 0.8)';
+                    flowCtx.fillStyle = 'rgba(238, 111, 163, 0.15)';
+                    flowCtx.lineWidth = 2;
+                    flowCtx.beginPath();
+                    for (let y = 8; y <= h - 8; y += 2) {
+                        const yNorm = (y - 8) / (h - 16);
+                        const u_norm = velocityProfile(yNorm, Re);
+                        let xPos = leftMargin + u_norm * Vmax * pixelsPerMeter * 0.1; // Scale down for display
+                        xPos = Math.min(xPos, w * 0.2); // Limit display width
+                        if (y === 8) flowCtx.moveTo(xPos, y);
+                        else flowCtx.lineTo(xPos, y);
+                    }
+                    flowCtx.lineTo(leftMargin, h - 8);
+                    flowCtx.lineTo(leftMargin, 8);
+                    flowCtx.fill();
+                    flowCtx.stroke();
+                    flowCtx.restore();
+
+                } else {
+                    flowSpeedLabel.textContent = '0.00'; flowReLabel.textContent = '—'; flowRegime.textContent = 'N/A';
+                    flowCtx.fillStyle = 'rgba(43,39,64,0.1)';
+                    particles.forEach(p => { flowCtx.beginPath(); flowCtx.arc(p.x, p.y, 2, 0, Math.PI * 2); flowCtx.fill(); });
+                }
+
+                flowCtx.restore(); // end clip
+
+                // Pipe outline (silhouette of the cylinder)
+                flowCtx.save();
+                buildPipePath();
+                flowCtx.strokeStyle = 'rgba(43,39,64,0.28)';
+                flowCtx.lineWidth = 1.6;
+                flowCtx.stroke();
+                flowCtx.restore();
+
+                // Visible circular opening on the near (left) end, giving the 3D tube read
+                flowCtx.save();
+                const capGrad = flowCtx.createRadialGradient(capRx, cy, 1, capRx, cy, capRy);
+                capGrad.addColorStop(0, 'rgba(255,255,255,0.65)');
+                capGrad.addColorStop(0.6, 'rgba(210, 230, 235, 0.4)');
+                capGrad.addColorStop(1, 'rgba(120, 130, 155, 0.55)');
+                flowCtx.beginPath();
+                flowCtx.ellipse(capRx, cy, capRx, capRy, 0, 0, Math.PI * 2);
+                flowCtx.fillStyle = capGrad;
+                flowCtx.fill();
+                flowCtx.strokeStyle = 'rgba(43,39,64,0.3)';
+                flowCtx.lineWidth = 1.4;
+                flowCtx.stroke();
+                flowCtx.restore();
+
+                animationFrameId = requestAnimationFrame(animateFlow);
+            }
+
+            // Update Slider Visuals and Values
+            function updateSliderFill(slider) {
+                const min = parseFloat(slider.min);
+                const max = parseFloat(slider.max);
+                const val = parseFloat(slider.value);
+                const percentage = ((val - min) / (max - min)) * 100;
+                slider.style.setProperty('--val', percentage + '%');
+            }
+
+            function updateFromSliders() {
+                epsOverD = parseFloat(sliderRoughness.value);
+                hf = parseFloat(sliderHf.value);
+                D_m = parseFloat(sliderD.value) / 1000;
+                L = parseFloat(sliderL.value);
+
+                valRoughness.textContent = epsOverD < 0.001 ? epsOverD.toExponential(1) : epsOverD.toFixed(5);
+                valHf.textContent = hf.toFixed(1);
+                valD.textContent = Math.round(D_m * 1000);
+                valL.textContent = Math.round(L);
+
+                [sliderRoughness, sliderHf, sliderD, sliderL].forEach(updateSliderFill);
+                redraw();
+            }
+
+            sliderRoughness.addEventListener('input', updateFromSliders);
+            sliderHf.addEventListener('input', updateFromSliders);
+            sliderD.addEventListener('input', updateFromSliders);
+            sliderL.addEventListener('input', updateFromSliders);
+
+            btnReset.addEventListener('click', () => {
+                sliderRoughness.value = 0.00023;
+                sliderHf.value = 25;
+                sliderD.value = 200;
+                sliderL.value = 500;
+                updateFromSliders();
+            });
+
+            // Animation loop for Moody chart pulse
+            function moodyAnimationLoop() {
+                pulsePhase += 0.08;
+                if (currentW && currentH) drawAll(ctx, currentW, currentH);
+                requestAnimationFrame(moodyAnimationLoop);
+            }
+
+            let resizeTimeout;
+            window.addEventListener('resize', () => { 
+                clearTimeout(resizeTimeout); 
+                resizeTimeout = setTimeout(() => { 
+                    resizeAndDraw(); 
+                    resizeFlowCanvas(); 
+                }, 150); 
+            });
+
+            // Init
+            resizeFlowCanvas();
+            resizeAndDraw();
+            updateFromSliders();
+            animateFlow();
+            moodyAnimationLoop();
+        })();
+    </script>
+</body>
+</html>
